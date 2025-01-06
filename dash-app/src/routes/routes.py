@@ -16,9 +16,6 @@ SENSOR = 'empty'
 THERMOSTAT = 'empty'
 received_data = {}
 
-current_directory = os.getcwd()
-print(f"Current working directory: {current_directory}")
-
 if os.path.isfile("/data/options.json"):
     with open('/data/options.json', "r") as json_file:
         options_config = json.load(json_file)
