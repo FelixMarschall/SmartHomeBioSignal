@@ -13,7 +13,7 @@ app = routes.create_app(app, server)
 app.layout = layout.create_layout(app)
 
 def main():
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0',debug=True)
 
 if __name__ == '__main__':
     main()
