@@ -12,5 +12,8 @@ app = routes.create_app(app, server)
 
 app.layout = layout.create_layout(app)
 
-if __name__ == '__main__':
+def main():
     app.run_server(debug=True)
+
+if __name__ == '__main__':
+    main()
