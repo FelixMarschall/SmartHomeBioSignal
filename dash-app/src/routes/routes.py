@@ -16,22 +16,21 @@ SENSOR = 'empty'
 THERMOSTAT = 'empty'
 received_data = {}
 
+current_directory = os.getcwd()
+print(f"Current working directory: {current_directory}")
+
 if os.path.isfile("/data/options.json"):
     with open('/data/options.json', "r") as json_file:
         options_config = json.load(json_file)
         if len(options_config['credential_secret']) >= 10:
             token = options_config['credential_secret']
-            logging.info("Individual token from options.json setted.")
-elif os.path.isfile("config.yaml"):
-    with open('config.yaml', "r") as yaml_file:
+            logging.info("Token from options.json setted.")
+elif os.path.isfile("../config.yaml"):
+    with open('../config.yaml', "r") as yaml_file:
         config = yaml.safe_load(yaml_file)
         if len(config['homeassistant_token']) >= 10:
             token = config['homeassistant_token']
-            logging.info("Individual token from config.yaml setted.")
-
-if not token:
-    logging.error("Token not setted.")
-    token = "empty"
+            logging.info("Token from config.yaml setted.")
 
 ha_client = Client(
     api_url = 'http://homeassistant.local:8123/api',
