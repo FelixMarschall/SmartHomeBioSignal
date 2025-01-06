@@ -1,0 +1,2 @@
+# generate token under: http://homeassistant.local:8123/profile
+homeassistant_token: XXXX

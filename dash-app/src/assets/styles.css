@@ -1,0 +1,39 @@
+/* body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
+} */
+
+.container {
+    text-align: center;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+}
+
+h1 {
+    color: #333;
+}
+
+h3 {
+    color: #555;
+}
+
+#temperature-display, #classifier-values-display {
+    margin: 10px 0;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.dropdown-output {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #666;
+}
