@@ -77,29 +77,14 @@ def create_layout(dash: Dash):
                                 [
                                     html.H4("Watch Data", className="card-title"),
                                     dash_table.DataTable(
+                                        id="watch-table",
                                         columns=[
+                                            {"name": "ts", "id": "ts"},
                                             {"name": "HR", "id": "hr"},
                                             {"name": "HRV", "id": "hrv"},
                                             {
                                                 "name": "Body Temperature",
-                                                "id": "body_temp",
-                                            },
-                                        ],
-                                        data=[
-                                            {
-                                                "hr": "60",
-                                                "hrv": "0.90",
-                                                "body_temp": "22°C",
-                                            },
-                                            {
-                                                "hr": "70",
-                                                "hrv": "0.85",
-                                                "body_temp": "24°C",
-                                            },
-                                            {
-                                                "hr": "80",
-                                                "hrv": "0.80",
-                                                "body_temp": "20°C",
+                                                "id": "temp",
                                             },
                                         ],
                                         style_table={
@@ -111,7 +96,7 @@ def create_layout(dash: Dash):
                                             "textAlign": "center",
                                         },
                                     ),
-                                    dcc.Graph(figure=fig),
+                                    dcc.Graph(id="watch-graph"),
                                 ]
                             ),
                             className="mb-2",

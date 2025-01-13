@@ -7,6 +7,7 @@ from homeassistant_api import Client
 import os
 import yaml
 import json
+from dash import dash_table
 import pandas as pd
 
 # Configure logging
@@ -14,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 thermostate: str = "empty"
-received_data = pd.DataFrame(columns=['hr', 'hrv', 'temp'], index=pd.to_datetime([]))
+received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
 
 if os.path.isfile("/data/options.json"):
     with open("/data/options.json", "r") as json_file:
@@ -40,7 +41,6 @@ def register_callbacks(app: Dash):
     )
     def update_output(n_clicks, value):
         if n_clicks is not None:
-            # get text from input')
             logger.info(f"Button clicked with input value: {value}")
             ha_client.async_get_entities()
             entity = ha_client.get_entity(entity_id=value)
@@ -49,11 +49,44 @@ def register_callbacks(app: Dash):
             return f"Input value: {value}"
         return ""
 
-    @app.callback(Output("output-data", "children"), Input("interval", "n_intervals"))
+    @app.callback(
+        Output("watch-table", "data"),
+        Output("watch-graph", "figure"),
+        Input("interval", "n_intervals"),
+    )
     def update_on_interval(n):
-        logger.info(f"received_data: {received_data}")
 
-        return f"Interval fired {n} times, received data: {received_data}"
+        figure = {
+            "data": [
+                {
+                    "x": received_data.index,
+                    "y": received_data["hr"],
+                    "type": "line",
+                    "name": "HR",
+                },
+                {
+                    "x": received_data.index,
+                    "y": received_data["hrv"],
+                    "type": "line",
+                    "name": "HRV",
+                },
+                {
+                    "x": received_data.index,
+                    "y": received_data["temp"],
+                    "type": "line",
+                    "name": "Body Temperature",
+                },
+            ],
+            "layout": {"title": "Sensor Data Over Time"},
+        }
+
+        return (
+            received_data.tail(5)
+            .reset_index()
+            .rename(columns={"index": "ts"})
+            .to_dict("records"),
+            figure,
+        )
 
 
 def create_app(app: Dash, server: Flask):
@@ -66,12 +99,11 @@ def create_app(app: Dash, server: Flask):
 
         global received_data
         # Assuming data contains a timestamp and a value
-        timestamp = pd.to_datetime(data['timestamp'])
+        timestamp = pd.to_datetime(data["timestamp"])
         new_data = pd.DataFrame(
-                                {'hr': [data['hr']],
-                                 'hrv': [data['hrv']],
-                                 'temp': [data['temp']]},
-                                index=[timestamp])
+            {"hr": [data["hr"]], "hrv": [data["hrv"]], "temp": [data["temp"]]},
+            index=[timestamp],
+        )
         received_data = pd.concat([received_data, new_data])
         return jsonify({"message": "Data received", "data": data})
 
