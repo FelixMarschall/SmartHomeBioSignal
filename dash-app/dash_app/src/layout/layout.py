@@ -14,6 +14,7 @@ def create_layout(dash: Dash):
             dbc.Row(
                 dbc.Col(
                     [
+                        dcc.Interval(id="interval", interval=2000),  # 5 seconds
                         html.Img(
                             src=dash.get_asset_url("logo.png"), style={"width": "200px"}
                         ),
@@ -40,29 +41,32 @@ def create_layout(dash: Dash):
                         ),
                         dbc.Row(
                             [
-                                        dbc.Col(
-                                            html.H4(
-                                                "Select Thermostate Entity:",
-                                                className="text-center",
-                                            ),
-                                            width=4,
-                                        ),
-                                        dbc.Col(
-                                            dbc.Input(
-                                                id="sensor_input",
-                                                placeholder="Type name id of thermostate...",
-                                                type="text",
-                                            ),
-                                            width=3,
-                                        ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Submit",
-                                                id="submit-val",
-                                                color="primary",
-                                            ),
-                                            width=3,
-                                        ),
+                                dbc.Col(
+                                    html.H4(
+                                        "Select Thermostate Entity:",
+                                        className="text-center",
+                                    ),
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    dbc.Input(
+                                        id="thermo_input",
+                                        placeholder="Type name id of thermostate...",
+                                        type="text",
+                                    ),
+                                    width=3,
+                                ),
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Submit",
+                                        id="submit-val",
+                                        color="primary",
+                                    ),
+                                    width=3,
+                                ),
+                                html.Div(id="output-div"),
+                                html.Div(id="output-data"),
+
                             ],
                             justify="center",
                             # align="center",
@@ -115,7 +119,6 @@ def create_layout(dash: Dash):
                         #     ],
                         #     width=6,
                         # ),
-                     
                         dbc.Card(
                             dbc.CardBody(
                                 [
