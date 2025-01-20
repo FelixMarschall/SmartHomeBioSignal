@@ -96,6 +96,7 @@ def create_app(app: Dash, server: Flask):
     def post_route():
         data = request.json
         logger.info(f"Data received: {data}")
+        return jsonify({"message": "Data received", "data": data})
 
         global received_data
         # Assuming data contains a timestamp and a value

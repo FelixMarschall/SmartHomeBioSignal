@@ -1,7 +1,7 @@
 [project]
 name = "dash-app"
 version = "0.1.0"
-description = ""
+description = "homeassistant app that receives data from a smart watch and displays it in a dashboard"
 authors = [
     {name = "Felix",email = "felix.marschall@student.kit.edu"}
 ]
