@@ -107,4 +107,8 @@ def create_app(app: Dash, server: Flask):
         received_data = pd.concat([received_data, new_data])
         return jsonify({"message": "Data received", "data": data})
 
+    @server.route("/data", methods=["GET"])
+    def get_route():
+        return "Hello World"
+
     return app
