@@ -30,8 +30,11 @@ elif os.path.isfile("../config.yaml"):
             token = config["homeassistant_token"]
             logging.info("Token from config.yaml setted.")
 
-ha_client = Client(api_url="http://homeassistant.local:8123/api", token=token)
-
+try:
+    ha_client = Client(api_url="http://homeassistant.local:8123/api", token=token)
+except Exception as e:
+    logging.error(f"Error: {e}")
+    ha_client = None
 
 def register_callbacks(app: Dash):
     @app.callback(
