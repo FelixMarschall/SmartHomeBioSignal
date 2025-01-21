@@ -8,7 +8,10 @@ import os
 import yaml
 import json
 import datetime
-from dash_app.src.data_processing.ThermalControlUnit import ThermalControlUnit, UserConfig
+from dash_app.src.data_processing.ThermalControlUnit import (
+    ThermalControlUnit,
+    UserConfig,
+)
 from dash_app.src.data_processing.PreprocessingUnit import (
     construct_dataset_df,
 )
@@ -101,7 +104,8 @@ def register_callbacks(app: Dash):
 def create_app(app: Dash, server: Flask):
     register_callbacks(app)
 
-    data_dir = "data"
+    app_base_dir = "dash_app/src/assets"
+    data_dir = os.path.join(app_base_dir, "data")
     server.config["data_dir"] = data_dir
 
     if not os.path.exists(data_dir):

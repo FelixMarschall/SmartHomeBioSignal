@@ -500,19 +500,3 @@ class ThermalControlUnit:
             current_df.at[current_df.index[-1], action] = value
 
         current_df.to_csv(self.get_csv_file_path(), index=False)
-
-
-# Test cases
-def main():
-    sensor_data_dir = "data/sensor_data"
-    user_config = UserConfig()
-
-    tcu = ThermalControlUnit(sensor_data_dir=sensor_data_dir, user_config=user_config)
-
-    tcu.decision_making()
-
-    # TODO: add simulation for different cases
-
-
-if __name__ == "__main__":
-    main()

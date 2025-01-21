@@ -48,7 +48,7 @@ def construct_watch_sensor_data_df(data_dict: dict) -> pd.DataFrame:
 
 def construct_smarthome_sensor_data_df() -> pd.DataFrame:
     # fetch humidity data
-    humidity_sensor_endpoint = "http://localhost:8050/sensor/humidity" 
+    humidity_sensor_endpoint = "http://localhost:8050/sensor/humidity"
     humidity_df = get_sensor_last_changed_df(
         humidity_sensor_endpoint, "room_humidity_in_pct"
     )
@@ -132,14 +132,13 @@ def construct_dataset_df(sensor_data: dict, user_feedback: Union[int, None] = No
     )
 
     dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"])
-    
+
     # check if file exists
-    if not os.path.exists("data/adaboost_deploy_v1.joblib"):
+    model_path = "dash_app/src/assets/models/adaboost_deploy_v1.joblib"
+    if not os.path.exists(model_path):
         raise FileNotFoundError("Model file not found. Please check the model path.")
 
-    model = joblib.load(
-        "data/adaboost_deploy_v1.joblib"
-    )  # TODO: @Felix: Change this to the correct model path
+    model = joblib.load(model_path)
     prediction = model.predict(dataset_no_timestamp)
 
     complete_dataset["classifier_prediction"] = prediction
