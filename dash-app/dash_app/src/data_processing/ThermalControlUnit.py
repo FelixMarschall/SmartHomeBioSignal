@@ -70,7 +70,6 @@ class ThermalControlUnit:
         logger: Union[Logger, None] = None,
     ):
         self.sensor_data_dir = sensor_data_dir
-        self.sensor_df = self.get_sensor_data()
 
         self.include_last_x_hours = include_last_x_hours
         self.user_config = user_config
