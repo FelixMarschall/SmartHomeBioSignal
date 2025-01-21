@@ -146,5 +146,5 @@ def construct_dataset_df(sensor_data: dict, user_feedback: Union[int, None] = No
     complete_dataset["cool"] = float("nan")
     complete_dataset["humidify"] = float("nan")
     complete_dataset["dry"] = float("nan")
-    complete_dataset = float("nan")
+    complete_dataset["user_feedback"] = float("nan")
     complete_dataset.loc[-1, ["user_feedback"]] = user_feedback
