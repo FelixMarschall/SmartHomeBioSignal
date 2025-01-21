@@ -134,7 +134,7 @@ def construct_dataset_df(sensor_data: dict, user_feedback: Union[int, None] = No
     dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"])
 
     # check if file exists
-    model_path = "dash_app/src/assets/models/adaboost_deploy_v1.joblib"
+    model_path = "dash_app/src/assets/model/adaboost_deploy_v1.joblib"
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model file not found. Please check the model path.")
 
