@@ -1,29 +1,26 @@
 import logging
 from dash import Dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from flask import Flask, request, jsonify
 import dash_bootstrap_components as dbc
 from homeassistant_api import Client
 import os
 import yaml
 import json
-import joblib
 import datetime
-import pandas as pd
 from data_processing.ThermalControlUnit import ThermalControlUnit
 from data_processing.PreprocessingUnit import (
-    construct_watch_sensor_data_df,
-    construct_smarthome_sensor_data_df,
     construct_dataset_df,
 )
+from dash import dash_table
+import pandas as pd
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SENSOR = "empty"
-THERMOSTAT = "empty"
-received_data = {}
+thermostate: str = "empty"
+received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
 
 if os.path.isfile("/data/options.json"):
     with open("/data/options.json", "r") as json_file:
@@ -38,33 +35,67 @@ elif os.path.isfile("../config.yaml"):
             token = config["homeassistant_token"]
             logging.info("Token from config.yaml setted.")
 
-ha_client = Client(api_url="http://homeassistant.local:8123/api", token=token)
-
-logger.info(ha_client.check_api_running())
+try:
+    ha_client = Client(api_url="http://homeassistant.local:8123/api", token=token)
+except Exception as e:
+    logging.error(f"Error: {e}")
+    ha_client = None
 
 
 def register_callbacks(app: Dash):
-    pass
-    # @app.callback(
-    #     Output('temperature-display', 'children'),
-    #     [Input('thermostat-dropdown', 'value')]
-    # )
-    # def update_temperature_display(selected_thermostat):
-    #     # Logic to get temperature for the selected thermostat
-    #     return f"Temperature for {selected_thermostat}"
+    @app.callback(
+        Output("output-div", "children"),
+        [Input("submit-val", "n_clicks")],
+        [State("thermo_input", "value")],
+    )
+    def update_output(n_clicks, value):
+        if n_clicks is not None:
+            logger.info(f"Button clicked with input value: {value}")
+            ha_client.async_get_entities()
+            entity = ha_client.get_entity(entity_id=value)
+            logger.info(f"Entity: {entity}")
+            thermostate = value
+            return f"Input value: {value}"
+        return ""
 
-    # @app.callback(
-    #     Output('classifier-values-display', 'children'),
-    #     [Input('thermostat-dropdown', 'value')]
-    # )
-    # def update_classifier_values_display(selected_thermostat):
-    #     # Logic to get classifier values for the selected thermostat
-    #     return f"Classifier values for {selected_thermostat}"
+    @app.callback(
+        Output("watch-table", "data"),
+        Output("watch-graph", "figure"),
+        Input("interval", "n_intervals"),
+    )
+    def update_on_interval(n):
 
-    # @app.callback([Input("sensor_input", "value")])
-    # def output_text(value):
-    #     logger.info(f"Input value: {value}")
-    #     return value
+        figure = {
+            "data": [
+                {
+                    "x": received_data.index,
+                    "y": received_data["hr"],
+                    "type": "line",
+                    "name": "HR",
+                },
+                {
+                    "x": received_data.index,
+                    "y": received_data["hrv"],
+                    "type": "line",
+                    "name": "HRV",
+                },
+                {
+                    "x": received_data.index,
+                    "y": received_data["temp"],
+                    "type": "line",
+                    "name": "Body Temperature",
+                },
+            ],
+            "layout": {"title": "Sensor Data Over Time"},
+        }
+
+        return (
+            received_data.tail(5)
+            .reset_index()
+            .rename(columns={"index": "ts"})
+            .to_dict("records"),
+            figure,
+        )
 
 
 def create_app(app: Dash, server: Flask):
@@ -78,7 +109,7 @@ def create_app(app: Dash, server: Flask):
         sensor_data_dir=data_dir, logger=logger
     )
 
-    @server.route("/post-route", methods=["POST"])
+    @server.route("/data", methods=["POST"])
     def post_route():
         data = request.json
         logger.info(f"Data received: {data}")
