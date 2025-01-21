@@ -103,7 +103,14 @@ def create_app(app: Dash, server: Flask):
 
     data_dir = "data"
     server.config["data_dir"] = data_dir
-    os.mkdir(data_dir)
+
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    user_config = UserConfig()
+    server.config["thermal_control_unit"] = ThermalControlUnit(
+        sensor_data_dir=data_dir, user_config=user_config, logger=logger
+    )
 
     user_config = UserConfig()
     server.config["thermal_control_unit"] = ThermalControlUnit(
