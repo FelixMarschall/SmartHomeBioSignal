@@ -8,7 +8,7 @@ import os
 import yaml
 import json
 import datetime
-from data_processing.ThermalControlUnit import ThermalControlUnit
+from data_processing.ThermalControlUnit import ThermalControlUnit, UserConfig
 from data_processing.PreprocessingUnit import (
     construct_dataset_df,
 )
@@ -105,8 +105,9 @@ def create_app(app: Dash, server: Flask):
     server.config["data_dir"] = data_dir
     os.mkdir(data_dir)
 
+    user_config = UserConfig()
     server.config["thermal_control_unit"] = ThermalControlUnit(
-        sensor_data_dir=data_dir, logger=logger
+        sensor_data_dir=data_dir, user_config=user_config, logger=logger
     )
 
     @server.route("/data", methods=["POST"])

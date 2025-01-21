@@ -1,14 +1,14 @@
 import math
 import datetime
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, Optional
 import pandas as pd
 import numpy as np
 from logging import Logger
 
 
 class UserConfig(BaseModel):
-    optimal_room_temp_celsius: float
+    optimal_room_temp_celsius: Optional[float] = None
     rollback_optimal_room_temp_celsius: Union[float, None] = None
     has_user_set_optimal_room_temp: bool = False
     last_feedback: Union[int, None] = 0
