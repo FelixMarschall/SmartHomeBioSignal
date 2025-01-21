@@ -8,8 +8,8 @@ import os
 import yaml
 import json
 import datetime
-from data_processing.ThermalControlUnit import ThermalControlUnit, UserConfig
-from data_processing.PreprocessingUnit import (
+from dash_app.src.data_processing.ThermalControlUnit import ThermalControlUnit, UserConfig
+from dash_app.src.data_processing.PreprocessingUnit import (
     construct_dataset_df,
 )
 from dash import dash_table
