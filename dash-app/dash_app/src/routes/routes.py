@@ -8,8 +8,8 @@ import os
 import yaml
 import json
 import datetime
-from data_processing.ThermalControlUnit import ThermalControlUnit
-from data_processing.PreprocessingUnit import (
+from dash_app.src.data_processing.ThermalControlUnit import ThermalControlUnit, UserConfig
+from dash_app.src.data_processing.PreprocessingUnit import (
     construct_dataset_df,
 )
 from dash import dash_table
@@ -103,7 +103,14 @@ def create_app(app: Dash, server: Flask):
 
     data_dir = "data"
     server.config["data_dir"] = data_dir
-    os.mkdir(data_dir)
+
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    user_config = UserConfig()
+    server.config["thermal_control_unit"] = ThermalControlUnit(
+        sensor_data_dir=data_dir, user_config=user_config, logger=logger
+    )
 
     server.config["thermal_control_unit"] = ThermalControlUnit(
         sensor_data_dir=data_dir, logger=logger
