@@ -120,7 +120,7 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     # merge sensor data
     logging.info("Merging sensor data...")
     complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
-    
+
     logging.info("Sensor data merged.")
     print("complete_dataset", complete_dataset.head())
 
