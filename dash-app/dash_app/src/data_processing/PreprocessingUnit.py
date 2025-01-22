@@ -76,9 +76,8 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
 
 def get_sensor_last_changed_df(endpoint: str, column_name: str):
     response = requests.get(endpoint)
-
-    csv_data = io.StringIO(response.text)  # Convert response text to a file-like object
-    df = pd.read_csv(csv_data)
+    df = pd.read_json(io.StringIO(response.text))
+    print("df head", df.head())
 
     df["last_changed"] = pd.to_datetime(
         df["last_changed"]
@@ -105,11 +104,17 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     # preprocess watch data
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
 
+    print("watch_df", watch_df.head())
+
     # fetch smart home data
     smarthome_df = construct_smarthome_sensor_data_df()
 
+    print("smarthome_df", smarthome_df.head())
+
     # merge sensor data
     complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
+    
+    print("complete_dataset", complete_dataset.head())
 
     # feature engineering
     complete_dataset["wrist_room_temp_delta_in_celsius"] = (

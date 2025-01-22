@@ -7,7 +7,7 @@ from homeassistant_api import Client
 import os
 import yaml
 import json
-import datetime
+from datetime import datetime
 from dash_app.src.data_processing.ThermalControlUnit import (
     ThermalControlUnit,
     UserConfig,
@@ -186,4 +186,25 @@ def create_app(app: Dash, server: Flask):
             }
         )
 
+
+    @server.route("/sensor/temperature", methods=["GET"])
+    def get_temperature():
+        df = pd.read_csv("dash_app/src/assets/data/history_temp.csv")
+
+        # column "last_changed" conatins timestamp in format 2025-01-11T23:00:00.000Z, convert it to the day today
+        today = datetime.today()
+        df['last_changed'] = pd.to_datetime(df['last_changed'])
+        df['last_changed'] = df['last_changed'].apply(lambda x: x.replace(year=today.year, month=today.month, day=today.day))
+        df['last_changed'] = df['last_changed'].dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        return df.to_json()
+    
+    @server.route("/sensor/humidity", methods=["GET"])
+    def get_humidity():
+        df = pd.read_csv("dash_app/src/assets/data/history_hum.csv")
+
+        today = datetime.today()
+        df['last_changed'] = pd.to_datetime(df['last_changed'])
+        df['last_changed'] = df['last_changed'].apply(lambda x: x.replace(year=today.year, month=today.month, day=today.day))
+        df['last_changed'] = df['last_changed'].dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        return df.to_json()
     return app
