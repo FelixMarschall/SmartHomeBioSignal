@@ -5,6 +5,7 @@ import requests
 from typing import Union, Dict
 import io
 import os
+import logging
 
 
 def construct_watch_sensor_data_df(data_dict: Dict) -> pd.DataFrame:
@@ -47,21 +48,23 @@ def construct_watch_sensor_data_df(data_dict: Dict) -> pd.DataFrame:
 
 
 def construct_smarthome_sensor_data_df() -> pd.DataFrame:
-    # fetch humidity data
+    logging.info("Fetching sensor data...")
     humidity_sensor_endpoint = "http://localhost:8050/sensor/humidity"
     humidity_df = get_sensor_last_changed_df(
         humidity_sensor_endpoint, "room_humidity_in_pct"
     )
 
-    # fetch temperature data
+    logging.info("Fetching temperature sensor data...")
     temperature_sensor_endpoint = "http://localhost:8050/sensor/temperature"
     temperature_df = get_sensor_last_changed_df(
         temperature_sensor_endpoint, "room_temp_in_celsius"
     )
 
+    logging.info("Merging sensor data...")
     smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp")
 
-    # preprocess sensor data
+    logging.info("Sensor data merged.")
+    logging.info("Preprocessing sensor data...")
     sensor_clip_values = {
         "room_temp_in_celsius": (10, 45),
         "room_humidity_in_pct": (0, 100),
@@ -70,15 +73,14 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
         smarthome_sensor_df[column] = smarthome_sensor_df[column].clip(
             lower=min_val, upper=max_val
         )
-
+    logging.info("Sensor data preprocessed.")
     return smarthome_sensor_df
 
 
 def get_sensor_last_changed_df(endpoint: str, column_name: str):
     response = requests.get(endpoint)
-
-    csv_data = io.StringIO(response.text)  # Convert response text to a file-like object
-    df = pd.read_csv(csv_data)
+    df = pd.read_json(io.StringIO(response.text))
+    print("df head", df.head())
 
     df["last_changed"] = pd.to_datetime(
         df["last_changed"]
@@ -103,13 +105,24 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
 def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
     # preprocess watch data
+    logging.info("Constructing watch data...")
+
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
 
-    # fetch smart home data
+    # print("watch_df", watch_df.head())
+
+    logging.info("Watch data constructed.")
+    logging.info("Constructing smarthome data...")
     smarthome_df = construct_smarthome_sensor_data_df()
 
+    print("smarthome_df", smarthome_df.head())
+
     # merge sensor data
+    logging.info("Merging sensor data...")
     complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
+    
+    logging.info("Sensor data merged.")
+    print("complete_dataset", complete_dataset.head())
 
     # feature engineering
     complete_dataset["wrist_room_temp_delta_in_celsius"] = (
@@ -134,6 +147,7 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"])
 
     # check if file exists
+    logging.info("Loading model...")
     model_path = "dash_app/src/assets/model/adaboost_deploy_v1.joblib"
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model file not found. Please check the model path.")

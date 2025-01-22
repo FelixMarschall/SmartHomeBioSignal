@@ -2,7 +2,7 @@
 name = "dash-app"
 version = "0.1.0"
 description = "homeassistant app that receives data from a smart watch and displays it in a dashboard"
-authors = ["Felix <felix@gmx.de>"]
+authors = ["Felix <felix.mars@outlook.com>"]
 readme = "README.md"
 packages = [{include = "dash_app"}]  # Required if your code is inside a folder
 
