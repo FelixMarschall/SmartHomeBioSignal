@@ -158,9 +158,9 @@ def create_app(app: Dash, server: Flask):
             csv_path = os.path.join(server.config["data_dir"], f"{csv_file_name}.csv")
 
             if os.path.exists(csv_path):
-                complete_dataset.to_csv(csv_path, mode="a", header=False)
+                complete_dataset.to_csv(csv_path, mode="a", header=False, index=False)
             else:
-                complete_dataset.to_csv(csv_path)
+                complete_dataset.to_csv(csv_path, index=False)
 
             # apply decision making process
             actions = server.config["thermal_control_unit"].decision_making()

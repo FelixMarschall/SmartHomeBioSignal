@@ -1,7 +1,7 @@
 import math
 import datetime
 from pydantic import BaseModel
-from typing import Union, Optional
+from typing import Union, Optional, Dict
 import pandas as pd
 import numpy as np
 from logging import Logger
@@ -70,6 +70,7 @@ class ThermalControlUnit:
         logger: Union[Logger, None] = None,
     ):
         self.sensor_data_dir = sensor_data_dir
+        self.sensor_df = pd.DataFrame()
 
         self.include_last_x_hours = include_last_x_hours
         self.user_config = user_config
@@ -88,7 +89,7 @@ class ThermalControlUnit:
     def apply_user_preference(self, room_temp: float) -> None:
         self.user_config.update_optimal_room_temp(new_temp=room_temp)
 
-    def decision_making(self) -> dict[str, int]:
+    def decision_making(self) -> Dict[str, int]:
         # fetch new data
         self.update_sensor_data_cache()
 
@@ -132,7 +133,7 @@ class ThermalControlUnit:
                 current_actions, last_decision
             )
 
-            self.rollback_decision = last_decision.iloc[:, 1:]
+            self.rollback_decision = last_decision.iloc[1:]
 
         # apply actions
         self.apply_actions(
@@ -140,9 +141,9 @@ class ThermalControlUnit:
         )
 
         # persist which actions were applied to easily revert them if cancelled by user
-        self.applied_decision = self.sensor_df.loc[
-            -1, ["room_temp_in_celsius", "room_humidity_in_pct"]
-        ]
+        self.applied_decision = self.sensor_df.iloc[-1][
+            ["room_temp_in_celsius", "room_humidity_in_pct"]
+        ].copy()
         for column in current_actions.keys():
             self.applied_decision[column] = current_actions[column]
 
@@ -151,7 +152,7 @@ class ThermalControlUnit:
 
         return current_actions
 
-    def rollback_last_decision(self) -> dict[str, int]:
+    def rollback_last_decision(self) -> Dict[str, int]:
         # use the decision before the last one to roll back changes
         current_actions = self.rollback_decision[
             ["heat", "cool", "humidify", "dry"]
@@ -237,7 +238,7 @@ class ThermalControlUnit:
     # --- Decision Making: Validate value range integrity as a first quick check
     def high_level_decision_making(
         self, latest_measurement: pd.Series
-    ) -> dict[str, int]:
+    ) -> Dict[str, int]:
         """Takes a high level look at the features & where they land in the value ranges"""
         actions = {
             "heat": 0,
@@ -309,7 +310,7 @@ class ThermalControlUnit:
         return proposed_action
 
     # --- Decision Making: Temperature features & comfort zones to determine actions & action parameters
-    def low_level_decision_making(self) -> dict[str, int]:
+    def low_level_decision_making(self) -> Dict[str, int]:
         actions = {
             "heat": 0,
             "cool": 0,
@@ -319,9 +320,9 @@ class ThermalControlUnit:
 
         # pick most common classifier prediction over a lag of the last 12 measurements (=1 min)
         CLASSIFIER_LAG_WINDOW = 12
-        most_common_classifier_prediction = self.sensor_df.loc[
-            -CLASSIFIER_LAG_WINDOW:, ["classifier_prediction"]
-        ].mode()[0]
+        most_common_classifier_prediction = self.sensor_df.iloc[
+            -CLASSIFIER_LAG_WINDOW:
+        ]["classifier_prediction"].mode()[0]
 
         latest_record = self.sensor_df.iloc[-1]
         if pd.notnull(latest_record["user_feedback"]):
@@ -461,7 +462,7 @@ class ThermalControlUnit:
         return current_actions
 
     # --- Smart Home Integration
-    def apply_actions(self, latest_record: pd.Series, actions: dict[str, int]) -> None:
+    def apply_actions(self, latest_record: pd.Series, actions: Dict[str, int]) -> None:
         # Temperature Control
         if actions["heat"] == 1:
             self.trigger_heater(latest_record)
@@ -493,8 +494,12 @@ class ThermalControlUnit:
         # TODO: implement window opener control with corresponding smarthome API call
 
     # --- Data Management
-    def persist_actions(self, actions: dict[str, int]):
+    def persist_actions(self, actions: Dict[str, int]):
         current_df = self.get_sensor_data()
+
+        for action in actions.keys():
+            if action not in current_df.columns:
+                current_df[action] = None  # Initialize column with NaN
 
         for action, value in actions.items():
             current_df.at[current_df.index[-1], action] = value

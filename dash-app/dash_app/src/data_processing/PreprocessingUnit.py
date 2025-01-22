@@ -2,12 +2,12 @@ import pandas as pd
 import joblib
 from dateutil import parser
 import requests
-from typing import Union
+from typing import Union, Dict
 import io
 import os
 
 
-def construct_watch_sensor_data_df(data_dict: dict) -> pd.DataFrame:
+def construct_watch_sensor_data_df(data_dict: Dict) -> pd.DataFrame:
     wearable_df = pd.DataFrame(data_dict)
 
     wearable_df["timestamp"] = pd.to_datetime(
@@ -101,7 +101,7 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
     return resampled_df
 
 
-def construct_dataset_df(sensor_data: dict, user_feedback: Union[int, None] = None):
+def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
     # preprocess watch data
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
 
@@ -147,4 +147,4 @@ def construct_dataset_df(sensor_data: dict, user_feedback: Union[int, None] = No
     complete_dataset["humidify"] = float("nan")
     complete_dataset["dry"] = float("nan")
     complete_dataset["user_feedback"] = float("nan")
-    complete_dataset.loc[-1, ["user_feedback"]] = user_feedback
+    complete_dataset.at[complete_dataset.index[-1], "user_feedback"] = user_feedback
