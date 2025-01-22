@@ -152,8 +152,11 @@ def create_app(app: Dash, server: Flask):
             user_feedback = data["user_feedback"]
 
             # construct dataset
+            logger.info("Constructing dataset...")
             complete_dataset = construct_dataset_df(sensor_data, user_feedback)
+            logger.info("Dataset constructed.")
 
+            logger.info("Saving dataset...")
             csv_file_name = datetime.datetime.now().strftime("%Y-%m-%d")
             csv_path = os.path.join(server.config["data_dir"], f"{csv_file_name}.csv")
 
