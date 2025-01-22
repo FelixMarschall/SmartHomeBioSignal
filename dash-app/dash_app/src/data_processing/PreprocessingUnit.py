@@ -56,7 +56,7 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
     # fetch temperature data
     temperature_sensor_endpoint = "http://localhost:8050/sensor/temperature"
     temperature_df = get_sensor_last_changed_df(
-        temperature_sensor_endpoint, "room_temperature_in_celsius"
+        temperature_sensor_endpoint, "room_temp_in_celsius"
     )
 
     smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp")
