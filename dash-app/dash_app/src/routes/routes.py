@@ -116,11 +116,6 @@ def create_app(app: Dash, server: Flask):
         sensor_data_dir=data_dir, user_config=user_config, logger=logger
     )
 
-    user_config = UserConfig()
-    server.config["thermal_control_unit"] = ThermalControlUnit(
-        sensor_data_dir=data_dir, user_config=user_config, logger=logger
-    )
-
     @server.route("/data", methods=["POST"])
     def post_route():
         data = request.json
@@ -152,12 +147,9 @@ def create_app(app: Dash, server: Flask):
             user_feedback = data["user_feedback"]
 
             # construct dataset
-            logger.info("Constructing dataset...")
             complete_dataset = construct_dataset_df(sensor_data, user_feedback)
-            logger.info("Dataset constructed.")
 
-            logger.info("Saving dataset...")
-            csv_file_name = datetime.datetime.now().strftime("%Y-%m-%d")
+            csv_file_name = datetime.now().strftime("%Y-%m-%d")
             csv_path = os.path.join(server.config["data_dir"], f"{csv_file_name}.csv")
 
             if os.path.exists(csv_path):
@@ -167,6 +159,7 @@ def create_app(app: Dash, server: Flask):
 
             # apply decision making process
             actions = server.config["thermal_control_unit"].decision_making()
+            logger.info("Decision made")
 
             return jsonify(
                 {"message": f"Thermal Actions applied (off=0, on=1): {actions}"}
@@ -189,25 +182,29 @@ def create_app(app: Dash, server: Flask):
             }
         )
 
-
     @server.route("/sensor/temperature", methods=["GET"])
     def get_temperature():
         df = pd.read_csv("dash_app/src/assets/data/history_temp.csv")
 
         # column "last_changed" conatins timestamp in format 2025-01-11T23:00:00.000Z, convert it to the day today
         today = datetime.today()
-        df['last_changed'] = pd.to_datetime(df['last_changed'])
-        df['last_changed'] = df['last_changed'].apply(lambda x: x.replace(year=today.year, month=today.month, day=today.day))
-        df['last_changed'] = df['last_changed'].dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        df["last_changed"] = pd.to_datetime(df["last_changed"])
+        df["last_changed"] = df["last_changed"].apply(
+            lambda x: x.replace(year=today.year, month=today.month, day=today.day)
+        )
+        df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         return df.to_json()
-    
+
     @server.route("/sensor/humidity", methods=["GET"])
     def get_humidity():
         df = pd.read_csv("dash_app/src/assets/data/history_hum.csv")
 
         today = datetime.today()
-        df['last_changed'] = pd.to_datetime(df['last_changed'])
-        df['last_changed'] = df['last_changed'].apply(lambda x: x.replace(year=today.year, month=today.month, day=today.day))
-        df['last_changed'] = df['last_changed'].dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        df["last_changed"] = pd.to_datetime(df["last_changed"])
+        df["last_changed"] = df["last_changed"].apply(
+            lambda x: x.replace(year=today.year, month=today.month, day=today.day)
+        )
+        df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         return df.to_json()
+
     return app

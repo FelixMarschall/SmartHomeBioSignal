@@ -1,6 +1,7 @@
 import pandas as pd
 import joblib
 from dateutil import parser
+import datetime
 import requests
 from typing import Union, Dict
 import io
@@ -80,7 +81,6 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
 def get_sensor_last_changed_df(endpoint: str, column_name: str):
     response = requests.get(endpoint)
     df = pd.read_json(io.StringIO(response.text))
-    print("df head", df.head())
 
     df["last_changed"] = pd.to_datetime(
         df["last_changed"]
@@ -91,6 +91,8 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
     # timestamp col needs to be index to use resample
     df.set_index("last_changed", inplace=True)
     resampled_df = df.resample("5s").ffill()
+
+    resampled_df.bfill(inplace=True)
 
     # retrieve last_changed column
     resampled_df.reset_index(inplace=True)
@@ -105,24 +107,12 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
 def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
     # preprocess watch data
-    logging.info("Constructing watch data...")
-
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
 
-    # print("watch_df", watch_df.head())
-
-    logging.info("Watch data constructed.")
-    logging.info("Constructing smarthome data...")
     smarthome_df = construct_smarthome_sensor_data_df()
 
-    print("smarthome_df", smarthome_df.head())
-
     # merge sensor data
-    logging.info("Merging sensor data...")
     complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
-
-    logging.info("Sensor data merged.")
-    print("complete_dataset", complete_dataset.head())
 
     # feature engineering
     complete_dataset["wrist_room_temp_delta_in_celsius"] = (
@@ -144,11 +134,10 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
         ]
     )
 
-    dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"])
+    dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"], inplace=False)
 
     # check if file exists
-    logging.info("Loading model...")
-    model_path = "dash_app/src/assets/model/adaboost_deploy_v1.joblib"
+    model_path = "dash_app/src/assets/model/adaboost_deploy_v2.joblib"
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model file not found. Please check the model path.")
 
@@ -162,3 +151,5 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     complete_dataset["dry"] = float("nan")
     complete_dataset["user_feedback"] = float("nan")
     complete_dataset.at[complete_dataset.index[-1], "user_feedback"] = user_feedback
+
+    return complete_dataset

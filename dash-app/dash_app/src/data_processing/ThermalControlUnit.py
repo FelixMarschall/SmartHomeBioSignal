@@ -91,7 +91,10 @@ class ThermalControlUnit:
 
     def decision_making(self) -> Dict[str, int]:
         # fetch new data
+        print("pre sensor update")
         self.update_sensor_data_cache()
+
+        print("updated sensor")
 
         latest_measurement = self.sensor_df.iloc[-1]
 
@@ -177,23 +180,26 @@ class ThermalControlUnit:
     def update_sensor_data_cache(self) -> None:
         # filter df for today's newer data
         today_sensor_df = self.get_sensor_data(yesterday=False)
-        old_sensor_df_latest_timestamp = max(self.sensor_df["timestamp"])
 
-        today_sensor_df = today_sensor_df[
-            today_sensor_df["timestamp"] > old_sensor_df_latest_timestamp
-        ]
+        list_of_dfs_to_combine = [today_sensor_df]
+        if not self.sensor_df.empty:
+            old_sensor_df_latest_timestamp = max(self.sensor_df["timestamp"])
 
-        list_of_dfs_to_combine = [self.sensor_df, today_sensor_df]
-
-        # if the day is not the same between new df and old df we need to include yesterday's data
-        current_timestamp = datetime.datetime.now()
-        if current_timestamp.day != old_sensor_df_latest_timestamp.day:
-            yesterday_sensor_df = self.get_sensor_data(yesterday=True)
-            yesterday_sensor_df = yesterday_sensor_df[
-                yesterday_sensor_df["timestamp"] > old_sensor_df_latest_timestamp
+            today_sensor_df = today_sensor_df[
+                today_sensor_df["timestamp"] > old_sensor_df_latest_timestamp
             ]
 
-            list_of_dfs_to_combine.append(yesterday_sensor_df)
+            list_of_dfs_to_combine = [today_sensor_df, self.sensor_df]
+
+            # if the day is not the same between new df and old df we need to include yesterday's data
+            current_timestamp = datetime.datetime.now()
+            if current_timestamp.day != old_sensor_df_latest_timestamp.day:
+                yesterday_sensor_df = self.get_sensor_data(yesterday=True)
+                yesterday_sensor_df = yesterday_sensor_df[
+                    yesterday_sensor_df["timestamp"] > old_sensor_df_latest_timestamp
+                ]
+
+                list_of_dfs_to_combine.append(yesterday_sensor_df)
 
         # combine all dfs
         new_sensor_df = pd.concat(list_of_dfs_to_combine)
