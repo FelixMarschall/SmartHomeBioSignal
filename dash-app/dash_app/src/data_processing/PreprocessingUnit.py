@@ -8,6 +8,12 @@ import io
 import os
 import logging
 
+# check if file exists
+model_path = "dash_app/src/assets/model/adaboost_deploy_v2.joblib"
+if not os.path.exists(model_path):
+    raise FileNotFoundError("Model file not found. Please check the model path.")
+
+model = joblib.load(model_path)
 
 def construct_watch_sensor_data_df(data_dict: Dict) -> pd.DataFrame:
     wearable_df = pd.DataFrame(data_dict)
@@ -106,13 +112,21 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
 
 def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
-    # preprocess watch data
+    print("sensor_data", sensor_data)
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
-
+    logging.info(f"Watch data processed.\n{watch_df}")
     smarthome_df = construct_smarthome_sensor_data_df()
+    logging.info(f"Smarthome data processed.\n{smarthome_df}")
+    logging.info("Merging sensor data on timestamp...")
 
     # merge sensor data
     complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
+
+    logging.info(f"Sensor data merged:\n{complete_dataset}")
+
+    if complete_dataset.empty:
+        logging.error("No data to predict.")
+        raise ValueError("No data to predict.")
 
     # feature engineering
     complete_dataset["wrist_room_temp_delta_in_celsius"] = (
@@ -120,6 +134,7 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
         - complete_dataset["room_temp_in_celsius"]
     )
 
+    print("complete", complete_dataset)
     # sort columns
     complete_dataset = complete_dataset.reindex(
         columns=[
@@ -135,15 +150,11 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     )
 
     dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"], inplace=False)
-
-    # check if file exists
-    model_path = "dash_app/src/assets/model/adaboost_deploy_v2.joblib"
-    if not os.path.exists(model_path):
-        raise FileNotFoundError("Model file not found. Please check the model path.")
-
-    model = joblib.load(model_path)
+    print("dataset_no_timestamp", dataset_no_timestamp)
+    logging.info("Predicting...")
     prediction = model.predict(dataset_no_timestamp)
 
+    logging.info("Prediction made.")
     complete_dataset["classifier_prediction"] = prediction
     complete_dataset["heat"] = float("nan")
     complete_dataset["cool"] = float("nan")

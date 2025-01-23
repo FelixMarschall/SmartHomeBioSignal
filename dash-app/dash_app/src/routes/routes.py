@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 thermostate: str = "empty"
 received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
 
+temperature_data = pd.read_csv("dash_app/src/assets/data/history_temp.csv")
+humidity_data = pd.read_csv("dash_app/src/assets/data/history_hum.csv")
+
 if os.path.isfile("/data/options.json"):
     with open("/data/options.json", "r") as json_file:
         options_config = json.load(json_file)
@@ -134,7 +137,6 @@ def create_app(app: Dash, server: Flask):
             )
 
             return jsonify({"message": "Configured room temperature preference."})
-
         else:
             return jsonify({"message": "Invalid request. Missing 'room_temp' key."})
 
@@ -184,27 +186,23 @@ def create_app(app: Dash, server: Flask):
 
     @server.route("/sensor/temperature", methods=["GET"])
     def get_temperature():
-        df = pd.read_csv("dash_app/src/assets/data/history_temp.csv")
-
         # column "last_changed" conatins timestamp in format 2025-01-11T23:00:00.000Z, convert it to the day today
         today = datetime.today()
-        df["last_changed"] = pd.to_datetime(df["last_changed"])
-        df["last_changed"] = df["last_changed"].apply(
+        temperature_data["last_changed"] = pd.to_datetime(temperature_data["last_changed"])
+        temperature_data["last_changed"] = temperature_data["last_changed"].apply(
             lambda x: x.replace(year=today.year, month=today.month, day=today.day)
         )
-        df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        return df.to_json()
+        temperature_data["last_changed"] = temperature_data["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        return temperature_data.to_json()
 
     @server.route("/sensor/humidity", methods=["GET"])
     def get_humidity():
-        df = pd.read_csv("dash_app/src/assets/data/history_hum.csv")
-
         today = datetime.today()
-        df["last_changed"] = pd.to_datetime(df["last_changed"])
-        df["last_changed"] = df["last_changed"].apply(
+        humidity_data["last_changed"] = pd.to_datetime(humidity_data["last_changed"])
+        humidity_data["last_changed"] = humidity_data["last_changed"].apply(
             lambda x: x.replace(year=today.year, month=today.month, day=today.day)
         )
-        df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        return df.to_json()
+        humidity_data["last_changed"] = humidity_data["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        return humidity_data.to_json()
 
     return app
