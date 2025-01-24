@@ -14,7 +14,7 @@ def create_layout(dash: Dash):
             dbc.Row(
                 dbc.Col(
                     [
-                        dcc.Interval(id="interval", interval=2000),  # 5 seconds
+                        dcc.Interval(id="interval", interval=3000),  # 5 seconds
                         html.Img(
                             src=dash.get_asset_url("logo.png"), style={"width": "200px"}
                         ),
@@ -97,7 +97,10 @@ def create_layout(dash: Dash):
                                         },
                                     ),
                                     dcc.Graph(id="watch-graph"),
+                                    html.H4("Smart Home Data", className="card-title"),
+                                    dcc.Graph(id="smarthome-graph"),
                                 ]
+
                             ),
                             className="mb-2",
                         ),

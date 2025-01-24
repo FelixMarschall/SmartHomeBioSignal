@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 TEMP_SENSOR: str = "sensor.felix_weather_temperatur"
 HUM_SENSOR: str = "sensor.felix_weather_luftfeuchtigkeit"
 
+temp_temp_sensor: pd.DataFrame = None
+temp_hum_sensor: pd.DataFrame = None
 
 thermostate: str = "empty"
 received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
@@ -76,11 +78,12 @@ def register_callbacks(app: Dash):
     @app.callback(
         Output("watch-table", "data"),
         Output("watch-graph", "figure"),
+        Output("smarthome-graph", "figure"),
         Input("interval", "n_intervals"),
     )
     def update_on_interval(n):
 
-        figure = {
+        watch_figure = {
             "data": [
                 {
                     "x": received_data.index,
@@ -104,12 +107,62 @@ def register_callbacks(app: Dash):
             "layout": {"title": "Sensor Data Over Time"},
         }
 
+        if ha_client is not None:
+            global temp_hum_sensor, temp_temp_sensor
+            if temp_hum_sensor is None:
+                history: History = ha_client.get_entity(entity_id=HUM_SENSOR).get_history()
+                data = [
+                    {
+                        "entity_id": state.entity_id,
+                        "last_updated": state.last_updated,
+                        "state": state.state,
+                    }
+                    for state in history.states
+                ]
+                df = pd.DataFrame(data)
+                temp_hum_sensor = df
+                temp_hum_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
+                temp_hum_sensor = df.set_index("last_updated")
+            if temp_temp_sensor is None:
+                history: History = ha_client.get_entity(entity_id=TEMP_SENSOR).get_history()
+                data = [
+                    {
+                        "entity_id": state.entity_id,
+                        "last_updated": state.last_updated,
+                        "state": state.state,
+                    }
+                    for state in history.states
+                ]
+                df = pd.DataFrame(data)
+                temp_temp_sensor = df
+                temp_temp_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
+                temp_temp_sensor = df.set_index("last_updated")
+
+        smarthome_figure = {
+            "data": [
+                {
+                    "x": temp_temp_sensor.index,
+                    "y": temp_temp_sensor["state"],
+                    "type": "line",
+                    "name": "Room Temperature (°C)",	
+                },
+                {
+                    "x": temp_hum_sensor.index,
+                    "y": temp_hum_sensor["state"],
+                    "type": "line",
+                    "name": "Room Humidity (%)",
+                }
+            ],
+            "layout": {"title": "Smart Home Sensor Data Over Time"},
+        }
+
         return (
             received_data.tail(5)
             .reset_index()
             .rename(columns={"index": "ts"})
             .to_dict("records"),
-            figure,
+            watch_figure,
+            smarthome_figure,
         )
 
 
@@ -206,6 +259,11 @@ def create_app(app: Dash, server: Flask):
                 for state in history.states
             ]
             df = pd.DataFrame(data)
+            global temp_temp_sensor
+            temp_temp_sensor = df
+            temp_temp_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
+            temp_temp_sensor = df.set_index("last_updated")
+
             return df.to_json()
         # dummy data
         today = datetime.today()
@@ -233,6 +291,11 @@ def create_app(app: Dash, server: Flask):
                 for state in history.states
             ]
             df = pd.DataFrame(data)
+            global temp_hum_sensor
+            temp_hum_sensor = df
+            temp_hum_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
+            temp_hum_sensor = df.set_index("last_updated")
+
             return df.to_json()
 
         # dummy data
