@@ -3,7 +3,7 @@ from dash import Dash
 from dash.dependencies import Input, Output, State
 from flask import Flask, request, jsonify
 import dash_bootstrap_components as dbc
-from homeassistant_api import Client
+from homeassistant_api import Client, History
 import os
 import yaml
 import json
@@ -22,12 +22,20 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+### Configure
+TEMP_SENSOR: str = "sensor.felix_weather_temperatur"
+HUM_SENSOR: str = "sensor.felix_weather_luftfeuchtigkeit"
+
+
 thermostate: str = "empty"
 received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
 
+### dummy data, is replaced with real data from Home Assistant in the functions
 temperature_data = pd.read_csv("dash_app/src/assets/data/history_temp.csv")
 humidity_data = pd.read_csv("dash_app/src/assets/data/history_hum.csv")
 
+### search for homeassistant token in options.json or config.yaml
 if os.path.isfile("/data/options.json"):
     with open("/data/options.json", "r") as json_file:
         options_config = json.load(json_file)
@@ -42,6 +50,7 @@ elif os.path.isfile("../config.yaml"):
             logging.info("Token from config.yaml setted.")
 
 try:
+    logger.info("Connecting to Home Assistant API")
     ha_client = Client(api_url="http://homeassistant.local:8123/api", token=token)
 except Exception as e:
     logging.error(f"Error: {e}")
@@ -186,23 +195,55 @@ def create_app(app: Dash, server: Flask):
 
     @server.route("/sensor/temperature", methods=["GET"])
     def get_temperature():
-        # column "last_changed" conatins timestamp in format 2025-01-11T23:00:00.000Z, convert it to the day today
+        if ha_client is not None:
+            history: History = ha_client.get_entity(entity_id=TEMP_SENSOR).get_history()
+            data = [
+                {
+                    "entity_id": state.entity_id,
+                    "last_updated": state.last_updated,
+                    "state": state.state,
+                }
+                for state in history.states
+            ]
+            df = pd.DataFrame(data)
+            return df.to_json()
+        # dummy data
         today = datetime.today()
-        temperature_data["last_changed"] = pd.to_datetime(temperature_data["last_changed"])
+        temperature_data["last_changed"] = pd.to_datetime(
+            temperature_data["last_changed"]
+        )
         temperature_data["last_changed"] = temperature_data["last_changed"].apply(
             lambda x: x.replace(year=today.year, month=today.month, day=today.day)
         )
-        temperature_data["last_changed"] = temperature_data["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        temperature_data["last_changed"] = temperature_data["last_changed"].dt.strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
         return temperature_data.to_json()
 
     @server.route("/sensor/humidity", methods=["GET"])
     def get_humidity():
+        if ha_client is not None:
+            history: History = ha_client.get_entity(entity_id=HUM_SENSOR).get_history()
+            data = [
+                {
+                    "entity_id": state.entity_id,
+                    "last_updated": state.last_updated,
+                    "state": state.state,
+                }
+                for state in history.states
+            ]
+            df = pd.DataFrame(data)
+            return df.to_json()
+
+        # dummy data
         today = datetime.today()
         humidity_data["last_changed"] = pd.to_datetime(humidity_data["last_changed"])
         humidity_data["last_changed"] = humidity_data["last_changed"].apply(
             lambda x: x.replace(year=today.year, month=today.month, day=today.day)
         )
-        humidity_data["last_changed"] = humidity_data["last_changed"].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        humidity_data["last_changed"] = humidity_data["last_changed"].dt.strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
         return humidity_data.to_json()
 
     return app
