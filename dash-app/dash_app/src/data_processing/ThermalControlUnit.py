@@ -91,10 +91,7 @@ class ThermalControlUnit:
 
     def decision_making(self) -> Dict[str, int]:
         # fetch new data
-        print("pre sensor update")
         self.update_sensor_data_cache()
-
-        print("updated sensor")
 
         latest_measurement = self.sensor_df.iloc[-1]
 

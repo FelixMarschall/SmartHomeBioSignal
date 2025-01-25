@@ -27,8 +27,10 @@ logger = logging.getLogger(__name__)
 TEMP_SENSOR: str = "sensor.felix_weather_temperatur"
 HUM_SENSOR: str = "sensor.felix_weather_luftfeuchtigkeit"
 
+# Global variables for storing temp sensor data
 temp_temp_sensor: pd.DataFrame = None
 temp_hum_sensor: pd.DataFrame = None
+temp_watch_data: pd.DataFrame = None
 
 thermostate: str = "empty"
 received_data = pd.DataFrame(columns=["hr", "hrv", "temp"], index=pd.to_datetime([]))
@@ -114,29 +116,29 @@ def register_callbacks(app: Dash):
                 data = [
                     {
                         "entity_id": state.entity_id,
-                        "last_updated": state.last_updated,
+                        "last_changed": state.last_changed,
                         "state": state.state,
                     }
                     for state in history.states
                 ]
                 df = pd.DataFrame(data)
                 temp_hum_sensor = df
-                temp_hum_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
-                temp_hum_sensor = df.set_index("last_updated")
+                temp_hum_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
+                temp_hum_sensor = df.set_index("last_changed")
             if temp_temp_sensor is None:
                 history: History = ha_client.get_entity(entity_id=TEMP_SENSOR).get_history()
                 data = [
                     {
                         "entity_id": state.entity_id,
-                        "last_updated": state.last_updated,
+                        "last_changed": state.last_changed,
                         "state": state.state,
                     }
                     for state in history.states
                 ]
                 df = pd.DataFrame(data)
                 temp_temp_sensor = df
-                temp_temp_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
-                temp_temp_sensor = df.set_index("last_updated")
+                temp_temp_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
+                temp_temp_sensor = df.set_index("last_changed")
 
         smarthome_figure = {
             "data": [
@@ -253,18 +255,21 @@ def create_app(app: Dash, server: Flask):
             data = [
                 {
                     "entity_id": state.entity_id,
-                    "last_updated": state.last_updated,
+                    "last_changed": state.last_changed,
                     "state": state.state,
                 }
                 for state in history.states
             ]
             df = pd.DataFrame(data)
-            global temp_temp_sensor
-            temp_temp_sensor = df
-            temp_temp_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
-            temp_temp_sensor = df.set_index("last_updated")
 
+            global temp_temp_sensor
+            temp_temp_sensor = df.copy()
+            temp_temp_sensor["last_changed"] = pd.to_datetime(temp_temp_sensor["last_changed"])
+            temp_temp_sensor = temp_temp_sensor.set_index("last_changed")
+
+            df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%d %H:%M:%S.%f%z")
             return df.to_json()
+
         # dummy data
         today = datetime.today()
         temperature_data["last_changed"] = pd.to_datetime(
@@ -285,17 +290,18 @@ def create_app(app: Dash, server: Flask):
             data = [
                 {
                     "entity_id": state.entity_id,
-                    "last_updated": state.last_updated,
+                    "last_changed": state.last_changed,
                     "state": state.state,
                 }
                 for state in history.states
             ]
             df = pd.DataFrame(data)
             global temp_hum_sensor
-            temp_hum_sensor = df
-            temp_hum_sensor["last_updated"] = pd.to_datetime(df["last_updated"])
-            temp_hum_sensor = df.set_index("last_updated")
+            temp_hum_sensor = df.copy()
+            temp_hum_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
+            temp_hum_sensor = temp_hum_sensor.set_index("last_changed")
 
+            df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%d %H:%M:%S.%f%z")
             return df.to_json()
 
         # dummy data

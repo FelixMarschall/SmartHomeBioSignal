@@ -68,7 +68,11 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
     )
 
     logging.info("Merging sensor data...")
-    smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp")
+    smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp", how="outer")
+
+    logging.info("Interpolating missing values...")
+    smarthome_sensor_df.set_index("timestamp", inplace=True)
+    smarthome_sensor_df = smarthome_sensor_df.interpolate(method='time')
 
     logging.info("Sensor data merged.")
     logging.info("Preprocessing sensor data...")
@@ -90,7 +94,7 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
     df["last_changed"] = pd.to_datetime(
         df["last_changed"]
-        .apply(parser.parse)
+       .apply(parser.parse)
         .apply(lambda x: x.strftime("%Y-%m-%d- %H:%M:%S"))
     )
 
@@ -112,7 +116,6 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
 
 def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
-    print("sensor_data", sensor_data)
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
     logging.info(f"Watch data processed.\n{watch_df}")
     smarthome_df = construct_smarthome_sensor_data_df()
@@ -120,7 +123,12 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     logging.info("Merging sensor data on timestamp...")
 
     # merge sensor data
-    complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
+    complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp", how="outer")
+
+    complete_dataset.set_index("timestamp", inplace=True)
+    complete_dataset = complete_dataset.interpolate(method='time')
+    # if there are still missing values, fill with the last known value
+    complete_dataset.bfill(inplace=True)
 
     logging.info(f"Sensor data merged:\n{complete_dataset}")
 
@@ -134,7 +142,6 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
         - complete_dataset["room_temp_in_celsius"]
     )
 
-    print("complete", complete_dataset)
     # sort columns
     complete_dataset = complete_dataset.reindex(
         columns=[
@@ -150,7 +157,6 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     )
 
     dataset_no_timestamp = complete_dataset.drop(columns=["timestamp"], inplace=False)
-    print("dataset_no_timestamp", dataset_no_timestamp)
     logging.info("Predicting...")
     prediction = model.predict(dataset_no_timestamp)
 
