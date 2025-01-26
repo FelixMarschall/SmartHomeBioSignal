@@ -68,14 +68,9 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
         temperature_sensor_endpoint, "room_temp_in_celsius"
     )
 
-    logging.warning("SMARTHOMEDATA")
-    logging.info(humidity_df)
-    logging.info(temperature_df)
-
     logging.info("Merging sensor data...")
     smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp")
 
-    logging.info("Interpolating missing values...")
 
     logging.info("Sensor data merged.")
     logging.info("Preprocessing sensor data...")
@@ -108,9 +103,6 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
     )
     df.loc[len(df) + 1] = new_row
 
-    logging.info("APPENDED LAST CHANGED")
-    logging.info(df)
-
     # timestamp col needs to be index to use resample
     df.set_index("last_changed", inplace=True)
     resampled_df = df.resample("5s").ffill()
@@ -121,9 +113,6 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
     resampled_df.reset_index(inplace=True)
     resampled_df.drop(columns=["entity_id"], inplace=True)
 
-    logging.info("RESAMPLED DF")
-    logging.info(resampled_df)
-
     resampled_df.rename(
         columns={"last_changed": "timestamp", "state": column_name}, inplace=True
     )
@@ -133,9 +122,7 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
 def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = None):
     watch_df = construct_watch_sensor_data_df(data_dict=sensor_data)
-    logging.info(f"Watch data processed.\n{watch_df}")
     smarthome_df = construct_smarthome_sensor_data_df()
-    logging.info(f"Smarthome data processed.\n{smarthome_df}")
     logging.info("Merging sensor data on timestamp...")
 
     # merge sensor data
@@ -144,7 +131,7 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     # if there are still missing values, fill with the last known value
     complete_dataset.bfill(inplace=True)
 
-    logging.info(f"Sensor data merged:\n{complete_dataset}")
+    logging.info(f"Sensor data merged.")
 
     if complete_dataset.empty:
         logging.error("No data to predict.")

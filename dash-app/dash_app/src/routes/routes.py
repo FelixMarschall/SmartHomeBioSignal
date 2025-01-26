@@ -232,7 +232,9 @@ def create_app(app: Dash, server: Flask):
             logger.info("Decision made")
 
             return jsonify(
-                {"message": f"Thermal Actions applied (off=0, on=1): {actions}"}
+                {"message": f"Thermal Actions applied (off=0, on=1): {actions}",
+                **actions
+                }
             )
 
         else:
@@ -248,7 +250,8 @@ def create_app(app: Dash, server: Flask):
 
         return jsonify(
             {
-                "message": f"Rollback applied. Thermal Actions applied (off=0, on=1): {actions}"
+                "message": f"Rollback applied. Thermal Actions applied (off=0, on=1): {actions}",
+                **actions
             }
         )
 
