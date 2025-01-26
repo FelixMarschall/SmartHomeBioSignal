@@ -112,7 +112,9 @@ def register_callbacks(app: Dash):
         if ha_client is not None:
             global temp_hum_sensor, temp_temp_sensor
             if temp_hum_sensor is None:
-                history: History = ha_client.get_entity(entity_id=HUM_SENSOR).get_history()
+                history: History = ha_client.get_entity(
+                    entity_id=HUM_SENSOR
+                ).get_history()
                 data = [
                     {
                         "entity_id": state.entity_id,
@@ -126,7 +128,9 @@ def register_callbacks(app: Dash):
                 temp_hum_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
                 temp_hum_sensor = df.set_index("last_changed")
             if temp_temp_sensor is None:
-                history: History = ha_client.get_entity(entity_id=TEMP_SENSOR).get_history()
+                history: History = ha_client.get_entity(
+                    entity_id=TEMP_SENSOR
+                ).get_history()
                 data = [
                     {
                         "entity_id": state.entity_id,
@@ -146,14 +150,14 @@ def register_callbacks(app: Dash):
                     "x": temp_temp_sensor.index,
                     "y": temp_temp_sensor["state"],
                     "type": "line",
-                    "name": "Room Temperature (°C)",	
+                    "name": "Room Temperature (°C)",
                 },
                 {
                     "x": temp_hum_sensor.index,
                     "y": temp_hum_sensor["state"],
                     "type": "line",
                     "name": "Room Humidity (%)",
-                }
+                },
             ],
             "layout": {"title": "Smart Home Sensor Data Over Time"},
         }
@@ -264,19 +268,20 @@ def create_app(app: Dash, server: Flask):
 
             global temp_temp_sensor
             temp_temp_sensor = df.copy()
-            temp_temp_sensor["last_changed"] = pd.to_datetime(temp_temp_sensor["last_changed"])
+            temp_temp_sensor["last_changed"] = pd.to_datetime(
+                temp_temp_sensor["last_changed"]
+            )
             temp_temp_sensor = temp_temp_sensor.set_index("last_changed")
 
-            df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+            df["last_changed"] = df["last_changed"].dt.strftime(
+                "%Y-%m-%d %H:%M:%S.%f%z"
+            )
             return df.to_json()
 
         # dummy data
         today = datetime.today()
         temperature_data["last_changed"] = pd.to_datetime(
             temperature_data["last_changed"]
-        )
-        temperature_data["last_changed"] = temperature_data["last_changed"].apply(
-            lambda x: x.replace(year=today.year, month=today.month, day=today.day)
         )
         temperature_data["last_changed"] = temperature_data["last_changed"].dt.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -301,15 +306,14 @@ def create_app(app: Dash, server: Flask):
             temp_hum_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
             temp_hum_sensor = temp_hum_sensor.set_index("last_changed")
 
-            df["last_changed"] = df["last_changed"].dt.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+            df["last_changed"] = df["last_changed"].dt.strftime(
+                "%Y-%m-%d %H:%M:%S.%f%z"
+            )
             return df.to_json()
 
         # dummy data
         today = datetime.today()
         humidity_data["last_changed"] = pd.to_datetime(humidity_data["last_changed"])
-        humidity_data["last_changed"] = humidity_data["last_changed"].apply(
-            lambda x: x.replace(year=today.year, month=today.month, day=today.day)
-        )
         humidity_data["last_changed"] = humidity_data["last_changed"].dt.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"
         )

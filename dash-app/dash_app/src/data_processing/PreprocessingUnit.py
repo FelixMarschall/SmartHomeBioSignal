@@ -15,6 +15,7 @@ if not os.path.exists(model_path):
 
 model = joblib.load(model_path)
 
+
 def construct_watch_sensor_data_df(data_dict: Dict) -> pd.DataFrame:
     wearable_df = pd.DataFrame(data_dict)
 
@@ -67,12 +68,14 @@ def construct_smarthome_sensor_data_df() -> pd.DataFrame:
         temperature_sensor_endpoint, "room_temp_in_celsius"
     )
 
+    logging.warning("SMARTHOMEDATA")
+    logging.info(humidity_df)
+    logging.info(temperature_df)
+
     logging.info("Merging sensor data...")
-    smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp", how="outer")
+    smarthome_sensor_df = pd.merge(humidity_df, temperature_df, on="timestamp")
 
     logging.info("Interpolating missing values...")
-    smarthome_sensor_df.set_index("timestamp", inplace=True)
-    smarthome_sensor_df = smarthome_sensor_df.interpolate(method='time')
 
     logging.info("Sensor data merged.")
     logging.info("Preprocessing sensor data...")
@@ -94,9 +97,19 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
 
     df["last_changed"] = pd.to_datetime(
         df["last_changed"]
-       .apply(parser.parse)
+        .apply(parser.parse)
         .apply(lambda x: x.strftime("%Y-%m-%d- %H:%M:%S"))
     )
+
+    # duplicate last measure to current time, allows ffill up to current time
+    new_row = df.iloc[-1].copy()
+    new_row["last_changed"] = pd.to_datetime(
+        datetime.datetime.now().strftime("%Y-%m-%d- %H:%M:%S")
+    )
+    df.loc[len(df) + 1] = new_row
+
+    logging.info("APPENDED LAST CHANGED")
+    logging.info(df)
 
     # timestamp col needs to be index to use resample
     df.set_index("last_changed", inplace=True)
@@ -107,6 +120,9 @@ def get_sensor_last_changed_df(endpoint: str, column_name: str):
     # retrieve last_changed column
     resampled_df.reset_index(inplace=True)
     resampled_df.drop(columns=["entity_id"], inplace=True)
+
+    logging.info("RESAMPLED DF")
+    logging.info(resampled_df)
 
     resampled_df.rename(
         columns={"last_changed": "timestamp", "state": column_name}, inplace=True
@@ -123,10 +139,8 @@ def construct_dataset_df(sensor_data: Dict, user_feedback: Union[int, None] = No
     logging.info("Merging sensor data on timestamp...")
 
     # merge sensor data
-    complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp", how="outer")
+    complete_dataset = pd.merge(watch_df, smarthome_df, on="timestamp")
 
-    complete_dataset.set_index("timestamp", inplace=True)
-    complete_dataset = complete_dataset.interpolate(method='time')
     # if there are still missing values, fill with the last known value
     complete_dataset.bfill(inplace=True)
 
