@@ -144,23 +144,41 @@ def register_callbacks(app: Dash):
                 temp_temp_sensor["last_changed"] = pd.to_datetime(df["last_changed"])
                 temp_temp_sensor = df.set_index("last_changed")
 
-        smarthome_figure = {
-            "data": [
-                {
-                    "x": temp_temp_sensor.index,
-                    "y": temp_temp_sensor["state"],
-                    "type": "line",
-                    "name": "Room Temperature (°C)",
-                },
-                {
-                    "x": temp_hum_sensor.index,
-                    "y": temp_hum_sensor["state"],
-                    "type": "line",
-                    "name": "Room Humidity (%)",
-                },
-            ],
-            "layout": {"title": "Smart Home Sensor Data Over Time"},
-        }
+            smarthome_figure = {
+                "data": [
+                    {
+                        "x": temp_temp_sensor.index,
+                        "y": temp_temp_sensor["state"],
+                        "type": "line",
+                        "name": "Room Temperature (°C)",
+                    },
+                    {
+                        "x": temp_hum_sensor.index,
+                        "y": temp_hum_sensor["state"],
+                        "type": "line",
+                        "name": "Room Humidity (%)",
+                    },
+                ],
+                "layout": {"title": "Smart Home Sensor Data Over Time"},
+            }
+        else:
+            smarthome_figure = {
+                "data": [
+                    {
+                        "x": pd.to_datetime(temperature_data["last_changed"]),
+                        "y": temperature_data["state"],
+                        "type": "line",
+                        "name": "Room Temperature (°C)",
+                    },
+                    {
+                        "x": pd.to_datetime(humidity_data["last_changed"]),
+                        "y": humidity_data["state"],
+                        "type": "line",
+                        "name": "Room Humidity (%)",
+                    },
+                ],
+                "layout": {"title": "Smart Home Sensor Data Over Time"},
+            }
 
         return (
             received_data.tail(5)
@@ -237,6 +255,14 @@ def create_app(app: Dash, server: Flask):
                 }
             )
 
+        #### SET THERMAL CONTROL FOR HOME ASSISTANT
+        # if ha_client is not None:
+        #     ha_client.get_entity(entity_id="climate.wohnzimmer")
+        #     # set temperature dummy
+        #     ha_client.set_state(
+        #         entity_id="climate.wohnzimmer", state="on", attributes={"temperature": 21}
+        #     )
+
         else:
             return jsonify(
                 {
@@ -247,6 +273,16 @@ def create_app(app: Dash, server: Flask):
     @server.route("/control/thermal/cancel", methods=["POST"])
     def cancel_thermal():
         actions = server.config["thermal_control_unit"].rollback_last_decision()
+
+        
+        ### SET THERMAL CONTROL FOR HOME ASSISTANT
+        # if ha_client is not None:
+        #     ha_client.get_entity(entity_id="climate.wohnzimmer")
+        #     # set temperature dummy
+        #     ha_client.set_state(
+        #         entity_id="climate.wohnzimmer", state="off", attributes={"temperature": 21}
+        #     )
+
 
         return jsonify(
             {
